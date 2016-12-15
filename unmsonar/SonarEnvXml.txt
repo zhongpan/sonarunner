@@ -1,0 +1,32 @@
+// -------------------------------------------------------------------------------
+// This template file is provided by Riverblade Ltd (www.riverblade.co.uk) for 
+// use with Visual Lint and LintProject Pro.
+//
+// This file may be freely redistributed (either with or without modification)
+// provided that any such redistribution retains this notice.
+// -------------------------------------------------------------------------------
+//
+// This template is designed for use with the VisualLintConsole /exportformat switch,
+// and illustrates an XML format which represents the data for each analysis issue
+// as attributes on a single XML element.
+//
+// For details of how to use this template, please see the topic "Command line options"
+// in the Visual Lint documentation:
+// 
+//   http://www.riverblade.co.uk/products/visual_lint/help/v4.0/index.htm#page=command_line_options.html
+//
+// For each issue within the [Issue] block, the following variables can be expanded:
+//
+//    $(SourceFile)   The pathname of the source file containing the issue.
+//    $(LineNo)       The line number within the source file where the issue was reported.
+//    $(ID)           The ID (or message no. in the case of PC-lint) of the issue.
+//    $(Category)     The name of the category (Warning, Error etc.) to which the issue belongs.
+//    $(Text)         The text of the issue.
+//    $(Desc)         A description of the issue.
+//
+<?xml version="1.0" ?>
+<results>
+  [Issue]
+    <issue file="$(SourceFile)" line="$(LineNo)" number="$(ID)" desc="$(Desc)" />
+  [/Issue]
+</results>
