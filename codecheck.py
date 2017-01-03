@@ -101,7 +101,7 @@ class VCSln(object):
         return cmdline
 
     def getprjname(self):
-        return filter(lambda x: "test_" not in x, map(lambda x: x.name, self.projects.values()))
+        return filter(lambda x: "test_" not in x and "sample_" not in x and "_test" not in x and "mtest" not in x, map(lambda x: x.name, self.projects.values()))
 
 
 class Timer(object):
@@ -420,11 +420,27 @@ if __name__ == "__main__":
             schedudler.add_job(sonar_job, trig, [args.runsonar])
             schedudler.start()
     elif args.listmodule:
-        sln = VCSln()
-        sln.load("D:\\u2k_dev_trunk\\s\\tmp\\cmake_stlp\\platform\\AllProjects_UnmPlatform.sln")
-        result = sln.getprjname()
-        print "\n".join(result)
-        print len(result)
+        subsystems = [('基础平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\common\CommonProjects.sln', 
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\public\unmplatformpublic.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\server\UnmPlatformServerProjects.sln']),
+        ('多业务平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\msmp\msmpservice.sln']),
+        ('产品公共', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\Common\CommonProjects.sln']),
+        ('ANM产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\ANM\Src\Unm2000Projects.sln']),
+        ('传输产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\OTNM\Src\OTNM_Product.sln']),
+        ('北向接口', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\server\UnmNBIServerProjects.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\public\unmnbipublic.sln']),
+        ('管理工具', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\unmtools\Src\ToolsProjects.sln'])]
+        
+        for ss,paths in subsystems:
+            print ss
+            cnt = 0
+            for path in paths:
+                sln = VCSln()
+                sln.load(path)
+                result = sln.getprjname()
+                print "\n".join(result)
+                cnt = cnt + len(result)
+            print cnt
     elif args.commitstat:
         cs = CommitStat()
         cs.parse(args.commitstat, ["pqaunm2000", "pqa"], "2015-08-00")
