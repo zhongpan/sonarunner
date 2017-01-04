@@ -22,8 +22,8 @@ import math
 from collections import OrderedDict
 import matplotlib.cm as cm
 import matplotlib.colors as colors
-
-
+import ConfigParser,StringIO
+from openpyxl import load_workbook
 class Util(object):
     @staticmethod
     def runshell(cmdline, outfile=None, env=None):
@@ -101,7 +101,8 @@ class VCSln(object):
         return cmdline
 
     def getprjname(self):
-        return filter(lambda x: "test_" not in x and "sample_" not in x and "_test" not in x and "mtest" not in x, map(lambda x: x.name, self.projects.values()))
+        return filter(lambda x: len(filter(lambda y:y in x,["test_", "sample_", "_test", "mtest"])) == 0, 
+        map(lambda x: x.name, self.projects.values()))
 
 
 class Timer(object):
@@ -402,7 +403,75 @@ class CommitStat(object):
         result = sorted(result, key=lambda x: x[1], reverse=True)
         return result[0:n]
 
+class NBPrj(object):
+    def __init__(self):
+        self.prjnames = []
+        
+    def load(self, path):
+        cf = ConfigParser.ConfigParser()
+        cfg_str = '[root]\n' + open(path, 'r').read()
+        cfg_fp = StringIO.StringIO(cfg_str)
+        cf.readfp(cfg_fp)
+        for opt in cf.options('root'):
+            if opt.startswith('project.'):
+                prjname = cf.get('root', opt)
+                if prjname.find('/') >= 0:
+                    prjname = os.path.basename(prjname)
+                self.prjnames.append(prjname)
+            
+    def getprjname(self):
+        return self.prjnames
 
+class ConponentChecker(object):
+    def __init__(self, path):
+        self.systems = [('基础平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\common\CommonProjects.sln', 
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\public\unmplatformpublic.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\server\UnmPlatformServerProjects.sln',
+        r'D:\u2k_dev_trunk\s\Platform\Src\client\unm2000\nbproject\project.properties']),
+        ('多业务平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\msmp\msmpservice.sln']),
+        ('产品公共', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\Common\CommonProjects.sln',
+        r'D:\u2k_dev_trunk\s\Src\Common\client\common\nbproject\project.properties']),
+        ('接入产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\ANM\Src\Unm2000Projects.sln',
+        r'D:\u2k_dev_trunk\s\ANM\Src\client\nbproject\project.properties']),
+        ('传输产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\OTNM\Src\OTNM_Product.sln',
+        r'D:\u2k_dev_trunk\s\OTNM\Src\client\nbproject\project.properties']),
+        ('北向接口', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\server\UnmNBIServerProjects.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\public\unmnbipublic.sln']),
+        ('管理工具', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\unmtools\Src\ToolsProjects.sln'])]
+        
+        self.componentpath = path
+        
+    def check(self):
+        wb = load_workbook(self.componentpath)
+        total = 0
+        for system,paths in self.systems:
+            result = []
+            for path in paths:
+                if path.endswith(".sln"):
+                    sln = VCSln()
+                    sln.load(path)
+                    result += sln.getprjname()
+                elif path.endswith("project.properties"):
+                    nbprj = NBPrj()
+                    nbprj.load(path)
+                    result += nbprj.getprjname()
+            total += len(result)
+            print system.decode('utf8').encode('gbk')
+            
+            ws = wb.get_sheet_by_name(system)
+            for row in ws.iter_rows(row_offset=1):
+                componentname = row[7].value
+                if not componentname:
+                    continue
+                componentname = componentname.strip()
+                if result.count(componentname) == 0:
+                    print "del:%s" % componentname
+                else:
+                    result.remove(componentname)
+            for com in result:
+                print "add:%s" % com 
+        print "total:%d" % total    
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='cmd options')
     parser.add_argument("-rs", "--runsonar", help="run sonar", choices=["sonar.conf"])
@@ -420,27 +489,8 @@ if __name__ == "__main__":
             schedudler.add_job(sonar_job, trig, [args.runsonar])
             schedudler.start()
     elif args.listmodule:
-        subsystems = [('基础平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\common\CommonProjects.sln', 
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\public\unmplatformpublic.sln',
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\server\UnmPlatformServerProjects.sln']),
-        ('多业务平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\msmp\msmpservice.sln']),
-        ('产品公共', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\Common\CommonProjects.sln']),
-        ('ANM产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\ANM\Src\Unm2000Projects.sln']),
-        ('传输产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\OTNM\Src\OTNM_Product.sln']),
-        ('北向接口', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\server\UnmNBIServerProjects.sln',
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\public\unmnbipublic.sln']),
-        ('管理工具', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\unmtools\Src\ToolsProjects.sln'])]
-        
-        for ss,paths in subsystems:
-            print ss
-            cnt = 0
-            for path in paths:
-                sln = VCSln()
-                sln.load(path)
-                result = sln.getprjname()
-                print "\n".join(result)
-                cnt = cnt + len(result)
-            print cnt
+        cc = ConponentChecker(u'UNM2000产品结构树.xlsx')
+        cc.check()
     elif args.commitstat:
         cs = CommitStat()
         cs.parse(args.commitstat, ["pqaunm2000", "pqa"], "2015-08-00")
