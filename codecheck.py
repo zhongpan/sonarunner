@@ -423,28 +423,13 @@ class NBPrj(object):
         return self.prjnames
 
 class ConponentChecker(object):
-    def __init__(self, path):
-        self.systems = [('基础平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\common\CommonProjects.sln', 
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\public\unmplatformpublic.sln',
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\server\UnmPlatformServerProjects.sln',
-        r'D:\u2k_dev_trunk\s\Platform\Src\client\unm2000\nbproject\project.properties']),
-        ('多业务平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\msmp\msmpservice.sln']),
-        ('产品公共', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\Common\CommonProjects.sln',
-        r'D:\u2k_dev_trunk\s\Src\Common\client\common\nbproject\project.properties']),
-        ('接入产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\ANM\Src\Unm2000Projects.sln',
-        r'D:\u2k_dev_trunk\s\ANM\Src\client\nbproject\project.properties']),
-        ('传输产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\OTNM\Src\OTNM_Product.sln',
-        r'D:\u2k_dev_trunk\s\OTNM\Src\client\nbproject\project.properties']),
-        ('北向接口', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\server\UnmNBIServerProjects.sln',
-        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\public\unmnbipublic.sln']),
-        ('管理工具', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\unmtools\Src\ToolsProjects.sln'])]
+    def __init__(self):
+        pass
         
-        self.componentpath = path
-        
-    def check(self):
-        wb = load_workbook(self.componentpath)
+    def check(self, systems, componentpath):
+        wb = load_workbook(componentpath)
         total = 0
-        for system,paths in self.systems:
+        for system,paths in systems:
             result = []
             for path in paths:
                 if path.endswith(".sln"):
@@ -469,13 +454,13 @@ class ConponentChecker(object):
                 else:
                     result.remove(componentname)
             for com in result:
-                print "add:%s" % com 
+                print "new:%s" % com 
         print "total:%d" % total    
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='cmd options')
     parser.add_argument("-rs", "--runsonar", help="run sonar", choices=["sonar.conf"])
-    parser.add_argument("-lm", "--listmodule", help="list module", action="store_true")
+    parser.add_argument("-cc", "--checkcomponent", help="check component", action="store_true")
     parser.add_argument("-cs", "--commitstat", help="commit stat")
     args = parser.parse_args()
     if args.runsonar:
@@ -488,9 +473,23 @@ if __name__ == "__main__":
             schedudler = BlockingScheduler()
             schedudler.add_job(sonar_job, trig, [args.runsonar])
             schedudler.start()
-    elif args.listmodule:
-        cc = ConponentChecker(u'UNM2000产品结构树.xlsx')
-        cc.check()
+    elif args.checkcomponent:
+        cc = ConponentChecker()
+        systems = [('基础平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\common\CommonProjects.sln', 
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\public\unmplatformpublic.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\server\UnmPlatformServerProjects.sln',
+        r'D:\u2k_dev_trunk\s\Platform\Src\client\unm2000\nbproject\project.properties']),
+        ('多业务平台', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\platform\Platform\Src\msmp\msmpservice.sln']),
+        ('产品公共', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\Common\CommonProjects.sln',
+        r'D:\u2k_dev_trunk\s\Src\Common\client\common\nbproject\project.properties']),
+        ('接入产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\ANM\Src\Unm2000Projects.sln',
+        r'D:\u2k_dev_trunk\s\ANM\Src\client\nbproject\project.properties']),
+        ('传输产品', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\OTNM\Src\OTNM_Product.sln',
+        r'D:\u2k_dev_trunk\s\OTNM\Src\client\nbproject\project.properties']),
+        ('北向接口', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\server\UnmNBIServerProjects.sln',
+        r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\NBI\Src\public\unmnbipublic.sln']),
+        ('管理工具', [r'D:\u2k_dev_trunk\s\tmp\cmake_stlp\product\Src\unmtools\Src\ToolsProjects.sln'])]        
+        cc.check(systems, u'UNM2000产品结构树.xlsx')
     elif args.commitstat:
         cs = CommitStat()
         cs.parse(args.commitstat, ["pqaunm2000", "pqa"], "2015-08-00")
