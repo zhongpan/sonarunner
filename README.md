@@ -1,5 +1,5 @@
 # sonarunner
-sonarrunner用于从各种IDE工程执行sonar检查。解决如下问题：
+sonarrunner用于从各种IDE工程执行sonar检查，解决如下问题：
 * 自动生成sonar工程文件，解决手写不不便，例如C++工程，需要头文件路径和宏定义写在工程文件中；
 * 增加并发执行，解决大量工程检查慢问题；
 * 通过配置文件重新组织工程，便于在soanr中检索和聚合。
@@ -8,6 +8,10 @@ sonarrunner用于从各种IDE工程执行sonar检查。解决如下问题：
 * VC工程，包括vcproj和vcxproj
 * Netbeans RCP工程
 * mvn工程
+
+# 使用前提
+* 安装好sonar-scanner
+* 如mvn工程，需安装好mvn
 
 # 使用方法
 ```
