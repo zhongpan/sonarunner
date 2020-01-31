@@ -209,9 +209,9 @@ class VCSln(Sln):
         self.depend_projects = []
         self.base_dir = base_dir
 
-    def load(self, path, multi_include_samesrcdir):
-        self.path = path
-        file = open(path)
+    def load(self, file_path, multi_include_samesrcdir):
+        self.path = file_path
+        file = open(file_path)
         try:
             lines = file.readlines()
             id = ""
@@ -227,10 +227,8 @@ class VCSln(Sln):
                         real_name = name
                         if self.is_exclude(real_name):
                             continue
-                        if name.endswith("_stlp") or name.endswith("_stlpd"):
-                            name = name[0:name.rindex('_')]
                         project = VCPrj(name, real_name, os.path.join(
-                            os.path.dirname(path), path))
+                            os.path.dirname(file_path), path))
                         if not project.load(multi_include_samesrcdir):
                             return False
                         self.projects[id] = project
@@ -362,7 +360,7 @@ class System(object):
     def run_sonar_scanner(self, n, dry_run, filters, skip_failure):
         cmd_infos = []
         for project in self.sonar_projects:
-            cmd_infos.append(project.getcmdline(
+            cmd_infos.append(project.get_cmd_line(
                 self.name, self.version, self.temp_dir))
         if filters:
             cmd_infos = filter(lambda x: len(
@@ -407,22 +405,22 @@ class SonarPrj(object):
             name, version, self.sln.name, self.project.name)
         properties += "sonar.projectName=%s\n" % self.project.name
         properties += "sonar.projectVersion=%s\n" % version
-        properties += "sonar.sourceEncoding=%s\n" % self.sln.getencode()
-        properties += "sonar.language=%s\n" % self.sln.getlanguage()
+        properties += "sonar.sourceEncoding=%s\n" % self.sln.get_encode()
+        properties += "sonar.language=%s\n" % self.sln.get_language()
         properties += "sonar.profile=%s\n" % self.sln.get_sonar_profile()
         properties += "sonar.working.directory=%s/.sonar_%s\n" % (
             System.get_work_dir(name, version), self.project.name)
         properties += "sonar.sources=%s\n" % ','.join(
-            self.project.getsrcdirs())
-        properties += "sonar.projectBaseDir=%s\n" % self.project.getsrcbasedir()
-        if self.sln.getlanguage() == LANG_CPP:
+            self.project.get_src_dirs())
+        properties += "sonar.projectBaseDir=%s\n" % self.project.get_src_base_dir()
+        if self.sln.get_language() == LANG_CPP:
             properties += "sonar.cxx.defines=%s\n" % " \\n\\ ".join(
-                self.project.preprocessordefinitions)
+                self.project.preprocessor_definitions)
             properties += "sonar.cxx.includeDirectories=%s\n" % ",".join(
-                self.project.includedirectories).replace("\\", "/")
+                self.project.include_directories).replace("\\", "/")
             properties += "sonar.cfamily.build-wrapper-output.bypass=true\n"
             properties += "sonar.exclusions=**/*.java\n"
-        elif self.sln.getlanguage() == LANG_JAVA:
+        elif self.sln.get_language() == LANG_JAVA:
             properties += "sonar.java.binaries=%s\n" % "build/classes"
         self.path = os.path.join(System.get_work_dir(
             name, version), "%s.properties" % self.project.name)
@@ -436,10 +434,8 @@ class SonarPrj(object):
             cmd_line = "sonar-scanner -Dproject.settings=%s" % self.path
             return (self.project.name, cmd_line, os.path.join(temp_dir, "sonar_scanner_%s.out" % self.project.name))
         else:
-            slicehome = os.path.abspath(os.path.join(
-                os.path.dirname(sys.argv[0]), "Ice-3.4.1"))
-            cmd_line = "mvn clean compile sonar:sonar -f %s -Dsonar.profile=%s -Dslice.home=%s -Dmaven.test.failure.ignore=true" % (
-                self.project.path, self.sln.get_sonar_profile(), slicehome)
+            cmd_line = "mvn clean compile sonar:sonar -f %s -Dsonar.profile=%s -Dmaven.test.failure.ignore=true" % (
+                self.project.path, self.sln.get_sonar_profile())
             return (self.project.name, cmd_line, os.path.join(temp_dir, "sonar_mvn_%s.out" % self.project.name))
 
 
@@ -447,32 +443,32 @@ class SonarRunner(object):
     def __init__(self):
         self.systems = []
 
-    def load_project(self, system, name, projectbasedir, projectdir, projectfile,
-                 excludes, profile, multi_include_samesrcdir):
+    def load_project(self, system, name, project_base_dir, project_dir, project_file,
+                 excludes, sonar_profile, multi_include_samesrcdir):
         if excludes:
             excludes = excludes.split(",")
         else:
             excludes = []
-        projectsln = None
-        basedir = os.path.join(projectbasedir, projectdir)
-        slnpath = os.path.join(basedir, projectfile)
-        if projectfile.endswith(".sln"):
-            projectsln = VCSln(basedir, name, excludes, profile)
-            if not projectsln.load(slnpath, multi_include_samesrcdir):
+        sln = None
+        base_dir = os.path.join(project_base_dir, project_dir)
+        sln_path = os.path.join(base_dir, project_file)
+        if project_file.endswith(".sln"):
+            sln = VCSln(base_dir, name, excludes, sonar_profile)
+            if not sln.load(sln_path, multi_include_samesrcdir):
                 return False
-        elif projectfile.endswith(".properties"):
-            projectsln = NBSln(name, excludes, profile)
-            if not projectsln.load(slnpath):
+        elif project_file.endswith(".properties"):
+            sln = NBSln(name, excludes, sonar_profile)
+            if not sln.load(sln_path):
                 return False
-        elif projectfile.endswith("pom.xml"):
-            projectsln = MvnSln(name, excludes, profile)
-            if not projectsln.load(slnpath):
+        elif project_file.endswith("pom.xml"):
+            sln = MvnSln(name, excludes, sonar_profile)
+            if not sln.load(sln_path):
                 return False
-        if not projectsln:
+        if not sln:
             return False
-        for subproject in projectsln.projects.values():
-            sonarprj = SonarPrj(projectsln, subproject)
-            system.addSonarPrj(sonarprj)
+        for project in sln.projects.values():
+            sonar_prject = SonarPrj(sln, project)
+            system.add_sonar_project(sonar_prject)
         return True
 
     def load_config(self, src_path, config_path, sonar_profile, multi_include_samesrcdir):
@@ -527,7 +523,7 @@ if __name__ == "__main__":
                         help="sonar quality profile", type=str, default="unm")
     parser.add_argument(
         "--jobs", "-j", help="max sonar scanner job count", type=int, default=3)
-    parser.add_argument("--dry_run", "-d", help="dry run",
+    parser.add_argument("--dry_run", "-dr", help="dry run",
                         action="store_true", default=False)
     parser.add_argument(
         "--filter", "-f", help="filter list", type=str, nargs="+")
