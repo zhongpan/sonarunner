@@ -480,13 +480,13 @@ class SonarRunner(object):
             tree = ET.parse(config_path)
             for node in tree.findall(".//system"):
                 base_dir = os.path.join(
-                    src_path, node.get("basedir"))
+                    src_path, node.get("relative-path"))
                 system_name = node.get("name")
                 system_version = node.get("version")
                 system = System(system_version, system_name)
                 self.systems.append(system)
                 for subsystem in node.findall("./subsystem"):
-                    project_dir = subsystem.get("dir")
+                    project_dir = subsystem.get("relative-path")
                     subsys_name = subsystem.get("name")
                     for project in subsystem.findall("./project"):
                         project_file = project.get("file")
