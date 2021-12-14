@@ -12,7 +12,7 @@
         <cusa.framework.version>0.10.0-SNAPSHOT</cusa.framework.version>
         <unm.api.version>trunk-SNAPSHOT</unm.api.version>
 
-        <log4j2.version>2.7</log4j2.version>
+        <log4j2.version>2.16.0</log4j2.version>
         <com.lmax.disruptor>3.3.2</com.lmax.disruptor>
 
         <junit.version>4.12</junit.version>
